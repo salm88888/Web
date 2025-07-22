@@ -1,58 +1,125 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <title>نتائج الطلاب</title>
+  <meta charset="UTF-8">
+  <title>نتيجة الطالب</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
       font-family: 'Cairo', sans-serif;
-      background-color: #f0f8f8;
-      text-align: center;
-      padding: 2rem;
+      background-color: #f9f9f9;
+      margin: 0;
+      padding: 1rem;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
     }
-    input {
-      padding: 0.5rem;
-      width: 300px;
-      font-size: 1rem;
+
+    .certificate {
+      width: 100%;
+      max-width: 800px;
+      border: 8px solid #279c9c;
+      padding: 1.5rem;
+      background-color: #ffffff;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
       text-align: center;
+      border-radius: 12px;
     }
+
+    .certificate h2 {
+      color: #279c9c;
+      margin-bottom: 1rem;
+      font-size: 1.5rem;
+    }
+
+    input#searchInput {
+      width: 100%;
+      max-width: 500px;
+      padding: 1rem;
+      font-size: 1.1rem;
+      margin: 1rem 0;
+      border: 2px solid #279c9c;
+      border-radius: 8px;
+      outline: none;
+    }
+
     table {
-      margin: 2rem auto;
+      width: 100%;
+      margin-top: 1.5rem;
       border-collapse: collapse;
-      width: 90%;
+      overflow-x: auto;
+      display: block;
     }
+
     th, td {
       border: 1px solid #ccc;
       padding: 0.7rem;
+      font-size: 1rem;
+      min-width: 100px;
+      text-align: center;
     }
+
     th {
       background-color: #279c9c;
       color: white;
     }
-    .not-found {
-      margin-top: 2rem;
-      color: red;
+
+    .summary {
+      margin-top: 1.5rem;
+      font-size: 1.1rem;
       font-weight: bold;
+      text-align: center;
+      padding: 1rem 0;
+    }
+
+    .pass {
+      color: green;
+    }
+
+    .fail {
+      color: red;
+    }
+
+    @media (max-width: 600px) {
+      .certificate {
+        padding: 1rem;
+      }
+
+      input#searchInput {
+        font-size: 1rem;
+        padding: 0.8rem;
+      }
+
+      .certificate h2 {
+        font-size: 1.2rem;
+      }
+
+      th, td {
+        font-size: 0.9rem;
+        padding: 0.5rem;
+      }
+
+      .summary {
+        font-size: 1rem;
+      }
     }
   </style>
 </head>
 <body>
-
-  <h2>🔍 ابحث عن نتيجة الطالب</h2>
-  <input type="text" id="searchInput" placeholder="أدخل اسم الطالب" oninput="searchStudent()" />
-
-  <div id="result"></div>
+  <div class="certificate">
+    <h2>🔍 ابحث عن نتيجة الطالب</h2>
+    <input type="text" id="searchInput" placeholder="أدخل اسم الطالب" oninput="searchStudent()">
+    <div id="result"></div>
+  </div>
 
   <script>
     let students = [];
 
-    // تنظيف الاسم (إزالة المسافات الزائدة، تحويل لحروف صغيرة)
     function cleanName(name) {
       return name.replace(/\s+/g, ' ').trim().toLowerCase();
     }
 
-    // تحميل البيانات من ملف CSV
-    fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vRxaS4EWh3wO-s7YJ1tGeZZpUw4AeSPELfYRbmY9zTpmlJ1tOOTaGbT_mtvl_rTyGVnSGcYFtj8yaDR/pub?gid=1484461829&single=true&output=csv")
+    fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vTIVZXCvJDmjfSUzf1j9ZnCpPAADTBtRZ6BihpXDbFEQXuMeM--TxeTNg3A-PTxGO37DtfXcq7Gdk6s/pub?gid=1878992480&single=true&output=csv")
       .then(res => res.text())
       .then(csv => {
         const lines = csv.trim().split('\n');
@@ -70,35 +137,61 @@
     function searchStudent() {
       const input = cleanName(document.getElementById("searchInput").value);
       const resultDiv = document.getElementById("result");
-      if (!input) {
-        resultDiv.innerHTML = "";
-        return;
-      }
+      resultDiv.innerHTML = "";
+      if (!input) return;
 
       const matched = students.filter(s => cleanName(s["الاسم"]).includes(input));
-
       if (matched.length === 0) {
-        resultDiv.innerHTML = "<div class='not-found'>لم يتم العثور على نتائج</div>";
+        resultDiv.innerHTML = "<div class='fail'>لم يتم العثور على نتائج</div>";
         return;
       }
 
-      // بناء الجدول
-      let html = "<table><thead><tr>";
-      Object.keys(matched[0]).forEach(key => {
-        html += `<th>${key}</th>`;
-      });
-      html += "</tr></thead><tbody>";
+      const student = matched[0];
+      const ignoredEnglish = ["الصف الأول", "الصف الثاني", "الصف الثالث", "الصف الرابع", "الصف الخامس", "الصف السادس"];
+      const ignoreEnglish = ignoredEnglish.includes(student["الصف"]);
 
-      matched.forEach(row => {
-        html += "<tr>";
-        Object.values(row).forEach(value => {
-          html += `<td>${value}</td>`;
-        });
-        html += "</tr>";
-      });
+      let failed = false;
+      let total = 0, count = 0;
+      const subjects = Object.keys(student).filter(k => !["الاسم", "الصف", "الفترة", "السنة"].includes(k));
+      const displaySubjects = subjects.filter(sub => !(ignoreEnglish && sub.includes("اللغة الانجليزية")));
 
-      html += "</tbody></table>";
-      resultDiv.innerHTML = html;
+      let table = `<table><thead><tr><th>المادة</th><th>الدرجة</th><th>الحالة</th></tr></thead><tbody>`;
+      displaySubjects.forEach(sub => {
+        const mark = parseInt(student[sub]);
+        const pass = mark >= 50;
+        if (!pass) failed = true;
+        total += mark;
+        count++;
+        table += `<tr><td>${sub}</td><td>${mark}</td><td class="${pass ? 'pass' : 'fail'}">${pass ? '✔️' : '❌'}</td></tr>`;
+      });
+      table += `</tbody></table>`;
+
+      let summary = `<div class='summary'>`;
+      if (!failed) {
+        const avg = Math.round(total / count);
+        let grade = "جيد";
+        if (avg >= 90) grade = "ممتاز";
+        else if (avg >= 80) grade = "جيد جداً";
+        else if (avg >= 70) grade = "جيد";
+        else if (avg >= 60) grade = "مقبول";
+        else grade = "ضعيف";
+
+        summary += `<div class='pass'>النتيجة: ناجح 🎉</div>`;
+        summary += `<div>المعدل: ${avg}</div>`;
+        summary += `<div>التقدير: ${grade}</div>`;
+        summary += `<div>نهنئك على هذا الإنجاز، ونتمنى لك مزيدًا من التفوق! 🌟</div>`;
+      } else {
+        summary += `<div class='fail'>النتيجة: راسب ❌</div>`;
+        summary += `<div>نأمل منك بذل المزيد من الجهد في العام القادم، بالتوفيق 💪</div>`;
+      }
+      summary += `</div>`;
+
+      resultDiv.innerHTML = `
+        <h2>نتيجة الطالب: ${student["الاسم"]}</h2>
+        <div>الصف: ${student["الصف"]} | الفترة: ${student["الفترة"]} | السنة: ${student["السنة"]}</div>
+        ${table}
+        ${summary}
+      `;
     }
   </script>
 </body>
