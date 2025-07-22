@@ -52,7 +52,7 @@
     }
 
     // تحميل البيانات من ملف CSV
-    fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vRxaS4EWh3wO-s7YJ1tGeZZpUw4AeSPELfYRbmY9zTpmlJ1qOOTaGbT_mtvl_rTyGVnSGcYFtj8yaDR/pub?gid=1484461829&single=true&output=csv")
+    fetch("https://docs.google.com/spreadsheets/d/e/2PACX-1vRxaS4EWh3wO-s7YJ1tGeZZpUw4AeSPELfYRbmY9zTpmlJ1tOOTaGbT_mtvl_rTyGVnSGcYFtj8yaDR/pub?gid=1484461829&single=true&output=csv")
       .then(res => res.text())
       .then(csv => {
         const lines = csv.trim().split('\n');
